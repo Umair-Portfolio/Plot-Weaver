@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Plot Weaver - Chronicles of the Unbound. Read unique stories, articles, and woven narratives on technology, fiction, and life.">
+    <meta name="keywords" content="stories, reading, writing, plot weaver, fiction, blog, articles">
+    <meta name="author" content="Plot Weaver">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="logo-mini.png">
+    
+    <!-- Google AdSense Meta Tag -->
+    <meta name="google-adsense-account" content="ca-pub-XXXXXXXXXXXXXXXX">
+
+    <!-- OPEN GRAPH METADATA -->
+    <meta property="og:title" content="Plot Weaver - Chronicles of the Unbound">
+    <meta property="og:description" content="A space where threads of thought are woven into stories.">
+    <meta property="og:image" content="Untitled_design-removebg-preview.png">
+    <meta property="og:type" content="website">
+    
+    <title>Plot Weaver - Chronicles of the Unbound</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- FIREBASE LIBRARIES (Compat Version - Best for direct HTML use) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <style>
+        .hidden-section { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .sticky-sidebar { position: sticky; top: 6rem; }
+        .secret-trigger { cursor: pointer; user-select: none; }
+        .backdrop-blur { backdrop-filter: blur(4px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .skeleton {
+            background: #e5e7eb;
+            background-image: linear-gradient(to right, #e5e7eb 0%, #f3f4f6 20%, #e5e7eb 40%, #e5e7eb 100%);
+            background-repeat: no-repeat;
+            background-size: 800px 104px; 
+            display: inline-block;
+            position: relative; 
+            animation: shimmer 1.5s infinite linear forwards;
+        }
+        .dark .skeleton {
+            background: #374151;
+            background-image: linear-gradient(to right, #374151 0%, #4b5563 20%, #374151 40%, #374151 100%);
+        }
+        @keyframes shimmer {
+            0% { background-position: -468px 0; }
+            100% { background-position: 468px 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
+
+    <!-- PROGRESS BAR -->
+    <div id="progress-bar" class="fixed top-0 left-0 h-1 bg-blue-600 z-[60] w-0 transition-all duration-100" style="display:none;"></div>
+
+    <!-- NAVIGATION -->
+    <nav class="sticky top-0 z-50 bg-gray-100 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 shadow-sm transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center secret-trigger flex-shrink-0" onclick="handleLogoClick()">
+                    <img src="logo1.png" alt="Plot Weaver Logo" class="h-14 w-auto object-contain">
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <button onclick="navigateTo('home')" class="font-medium text-gray-600 hover:text-[#1e3a8a] dark:text-gray-300 dark:hover:text-blue-400 transition">Read</button>
+                    <button id="nav-write-btn" onclick="navigateTo('dashboard')" class="hidden font-medium text-gray-600 hover:text-[#1e3a8a] dark:text-gray-300 dark:hover:text-blue-400 transition">Write</button>
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 transition" title="Toggle Dark Mode">
+                        <i id="theme-icon" data-lucide="moon" class="h-5 w-5"></i>
+                    </button>
+                    <div id="auth-btn" onclick="toggleAuth()" class="hidden h-8 w-8 rounded-full bg-[#1e3a8a] flex items-center justify-center text-white cursor-pointer hover:bg-blue-900 transition shadow-sm" title="Logout">
+                        <i data-lucide="log-out" class="h-4 w-4"></i>
+                    </div>
+                </div>
+                <div class="md:hidden flex items-center gap-4">
+                    <button onclick="toggleDarkMode()" class="text-gray-600 dark:text-gray-300">
+                        <i id="mobile-theme-icon" data-lucide="moon" class="h-6 w-6"></i>
+                    </button>
+                    <button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-[#1e3a8a] dark:text-gray-300 dark:hover:text-white focus:outline-none">
+                        <i id="mobile-menu-icon" data-lucide="menu" class="h-8 w-8"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div class="px-4 pt-2 pb-4 space-y-1">
+                <button onclick="navigateTo('home'); toggleMobileMenu()" class="block w-full text-left px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-[#1e3a8a] hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">Read Stories</button>
+                <button id="mobile-nav-write-btn" onclick="navigateTo('dashboard'); toggleMobileMenu()" class="hidden w-full text-left px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-[#1e3a8a] hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">Write (Dashboard)</button>
+                <button id="mobile-auth-btn" onclick="toggleAuth(); toggleMobileMenu()" class="hidden w-full text-left px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-[#1e3a8a] hover:bg-gray-50 border-t border-gray-100 dark:border-gray-700 mt-2 dark:text-gray-200 dark:hover:bg-gray-700">
+                    <div class="flex items-center"><i data-lucide="log-out" class="h-4 w-4 mr-2"></i><span id="mobile-auth-text">Logout</span></div>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- COOKIE BANNER -->
+    <div id="cookie-banner" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 shadow-lg z-[70] hidden fade-in">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-sm text-gray-600 dark:text-gray-300 text-center md:text-left">
+                We use cookies to enhance your experience and serve personalized ads. By continuing to visit this site you agree to our use of cookies. 
+                <a href="#" onclick="showPolicy('privacy'); return false;" class="text-[#1e3a8a] dark:text-blue-400 underline">Learn more</a>.
+            </div>
+            <button onclick="acceptCookies()" class="px-6 py-2 bg-[#1e3a8a] text-white text-sm font-bold rounded-full hover:bg-blue-900 transition whitespace-nowrap">
+                Accept
+            </button>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="login-modal" class="fixed inset-0 bg-black/50 backdrop-blur hidden items-center justify-center z-[100] fade-in px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-sm transform transition-all border border-gray-100 dark:border-gray-700">
+            <div class="text-center mb-6">
+                <div class="bg-blue-50 dark:bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="lock" class="h-8 w-8 text-[#1e3a8a] dark:text-blue-400"></i></div>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white font-serif">Admin Access</h2>
+            </div>
+            <input type="password" id="modal-password-input" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#1e3a8a] outline-none mb-6 text-center tracking-widest text-lg" placeholder="••••••••" onkeypress="if(event.key === 'Enter') submitLogin()">
+            <div class="flex gap-3">
+                <button onclick="closeLoginModal()" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                <button onclick="submitLogin()" class="flex-1 px-4 py-2.5 bg-[#1e3a8a] text-white rounded-lg hover:bg-blue-900 transition-all">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="logout-modal" class="fixed inset-0 bg-black/50 backdrop-blur hidden items-center justify-center z-[100] fade-in px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-sm border border-gray-100 dark:border-gray-700">
+            <div class="text-center mb-6">
+                <div class="bg-red-50 dark:bg-red-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="log-out" class="h-8 w-8 text-red-600 dark:text-red-400"></i></div>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white font-serif">Confirm Logout</h2>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="closeLogoutModal()" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                <button onclick="confirmLogout()" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <button id="back-to-top" onclick="scrollToTop()" class="fixed bottom-8 right-8 bg-[#1e3a8a] text-white p-3 rounded-full shadow-lg hover:bg-blue-900 transition-all transform translate-y-20 opacity-0 z-40 dark:bg-blue-600 dark:hover:bg-blue-700"><i data-lucide="arrow-up" class="h-6 w-6"></i></button>
+    <div id="article-scroll-indicator" class="hidden lg:hidden fixed top-32 bottom-32 w-1.5 bg-gray-100 dark:bg-gray-800 rounded-full z-30" style="left: calc(50% - 28rem);"><div id="vertical-progress-bar" class="w-full bg-gray-400 dark:bg-gray-500 rounded-full transition-all duration-100" style="height: 0%"></div></div>
+
+    <!-- MAIN -->
+    <main id="main-content" class="flex-grow max-w-7xl mx-auto w-full px-4 py-8 fade-in">
+        <!-- HOME -->
+        <div id="home-section">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4 text-[#1e3a8a] dark:text-blue-400">Chronicles of the Unbound</h1>
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">A space where threads of thought are woven into stories.</p>
+                <div class="max-w-2xl mx-auto px-4 mb-4">
+                    <div class="relative">
+                        <input type="text" id="search-input" onkeyup="handleSearch()" placeholder="Search stories..." class="w-full pl-12 pr-4 py-3 rounded-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:border-[#1e3a8a] dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none transition shadow-sm">
+                        <i data-lucide="search" class="absolute left-4 top-3.5 h-5 w-5 text-gray-400"></i>
+                    </div>
+                </div>
+                <div class="flex justify-center mb-10 overflow-x-auto no-scrollbar px-4" id="category-list"></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div class="lg:col-span-1 hidden lg:block"><div class="sticky-sidebar"><h3 class="text-lg font-bold text-[#1e3a8a] dark:text-blue-400 mb-6 border-b border-gray-300 dark:border-gray-700 pb-2 uppercase tracking-wider">Top Stories</h3><div id="top-stories-list" class="space-y-6"></div></div></div>
+                <div class="lg:col-span-2"><div id="articles-list" class="space-y-12"></div></div>
+                <div class="lg:col-span-1 hidden lg:block"><div class="sticky-sidebar"><h3 class="text-lg font-bold text-[#1e3a8a] dark:text-blue-400 mb-6 border-b border-gray-300 dark:border-gray-700 pb-2 uppercase tracking-wider">New Stories</h3><div id="new-stories-list" class="space-y-6"></div></div></div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard-section" class="hidden-section max-w-5xl mx-auto">
+            <div class="flex flex-wrap justify-between items-center mb-10 gap-4">
+                <h1 class="text-3xl font-bold text-[#1e3a8a] dark:text-blue-400">Writer's Dashboard</h1>
+                <div class="flex gap-3">
+                    <button onclick="navigateTo('settings')" class="flex items-center gap-2 px-4 py-2.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"><i data-lucide="settings" class="h-4 w-4"></i> Settings</button>
+                    <button onclick="openEditor()" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1e3a8a] text-white font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"><i data-lucide="plus" class="h-4 w-4"></i> New Story</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"><div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Total Stories</div><div class="text-3xl font-bold text-[#4a5568] dark:text-gray-200" id="stat-total">0</div></div>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"><div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Published</div><div class="text-3xl font-bold text-green-600" id="stat-published">0</div></div>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"><div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase">Top Stories</div><div class="text-3xl font-bold text-blue-600 dark:text-blue-400" id="stat-featured">0</div></div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead class="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm uppercase border-b border-gray-100 dark:border-gray-700">
+                        <tr><th class="p-4 font-medium">Title</th><th class="p-4 font-medium">Category</th><th class="p-4 font-medium">Status</th><th class="p-4 font-medium">Top?</th><th class="p-4 font-medium text-right">Actions</th></tr>
+                    </thead>
+                    <tbody id="dashboard-list" class="divide-y divide-gray-100 dark:divide-gray-700 text-gray-800 dark:text-gray-200"></tbody>
+                </table>
+                <div id="empty-state" class="hidden p-8 text-center text-gray-400">No stories yet. Click "New Story" to begin.</div>
+            </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="settings-section" class="hidden-section max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 mt-10 border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-[#1e3a8a] dark:text-blue-400">Admin Settings</h2><button onclick="navigateTo('dashboard')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i data-lucide="x" class="h-6 w-6"></i></button></div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Change Admin Password</label>
+                <input type="password" id="settings-current-pass" placeholder="Current Password" class="w-full px-4 py-2 mb-3 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="password" id="settings-new-pass" placeholder="New Password" class="w-full px-4 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <button onclick="changePassword()" class="w-full bg-[#1e3a8a] text-white font-medium py-2 rounded-lg hover:bg-blue-900 transition">Update Password</button>
+        </div>
+
+        <!-- EDITOR -->
+        <div id="editor-section" class="hidden-section bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-3xl mx-auto border border-gray-100 dark:border-gray-700">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b border-gray-100 dark:border-gray-700 gap-4">
+                <button onclick="navigateTo('dashboard')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-2"><i data-lucide="arrow-left" class="h-4 w-4"></i> Back</button>
+                <div class="flex flex-wrap gap-2 items-center w-full md:w-auto justify-end">
+                    <label class="flex items-center cursor-pointer mr-4"><input type="checkbox" id="edit-featured" class="hidden peer"><div class="flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 peer-checked:bg-yellow-100 peer-checked:text-yellow-700 peer-checked:border-yellow-400 transition select-none"><i data-lucide="star" class="h-4 w-4"></i><span class="text-sm font-medium">Top Story</span></div></label>
+                    <span id="editor-status-badge" class="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 mr-2">Draft</span>
+                    <button onclick="saveArticle()" class="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1e3a8a] text-white text-sm font-medium shadow-md hover:bg-blue-900"><i data-lucide="save" class="h-4 w-4"></i> Save</button>
+                </div>
+            </div>
+            <input type="hidden" id="edit-id">
+            <div class="mb-4">
+                <input type="text" id="edit-title" placeholder="Title" class="w-full text-4xl serif font-bold text-gray-900 dark:text-white placeholder-gray-300 border-none outline-none bg-transparent mb-2">
+                <input type="text" id="edit-subtitle" placeholder="Subtitle (optional)" class="w-full text-xl text-gray-500 dark:text-gray-400 placeholder-gray-300 border-none outline-none font-light bg-transparent">
+            </div>
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Category</label>
+                <input list="category-options" id="edit-category" placeholder="Select or type a category..." class="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-100 outline-none text-gray-700">
+                <datalist id="category-options"></datalist>
+            </div>
+            <div class="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
+                <input type="file" id="image-upload-input" class="hidden" accept="image/*" onchange="handleImageUpload(this)">
+                <button onclick="triggerImageUpload()" class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 hover:text-[#1e3a8a] dark:text-gray-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded transition"><i data-lucide="image" class="h-4 w-4"></i> Upload Image</button>
+                <span class="text-xs text-gray-400">First image is cover.</span>
+            </div>
+            <textarea id="edit-content" placeholder="Start weaving your story..." class="w-full h-[50vh] resize-none text-lg text-gray-700 dark:text-gray-300 leading-relaxed placeholder-gray-300 border-none outline-none bg-transparent"></textarea>
+        </div>
+
+        <!-- READER -->
+        <div id="article-section" class="hidden-section bg-white dark:bg-gray-800 max-w-3xl mx-auto px-6 py-12 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+            <button onclick="navigateTo('home')" class="mb-8 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-2"><i data-lucide="arrow-left" class="h-4 w-4"></i> Back to Home</button>
+            <header class="mb-8">
+                <div class="flex items-center justify-center gap-2 text-sm text-[#1e3a8a] dark:text-blue-400 mb-3 uppercase tracking-wider">
+                    <span id="read-category" class="font-bold bg-blue-50 dark:bg-gray-700 px-2 py-0.5 rounded">Category</span><span>•</span><span id="read-date">Date</span>
+                </div>
+                <h1 id="read-title" class="text-4xl md:text-5xl serif font-bold text-gray-900 dark:text-white mb-4 leading-tight text-center"></h1>
+                <h2 id="read-subtitle" class="text-2xl text-gray-500 dark:text-gray-400 font-light leading-snug text-center"></h2>
+            </header>
+            <div id="read-content" class="prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-loose"></div>
+            <div class="flex items-center justify-center mt-8 mb-8">
+                <div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[#1e3a8a] dark:text-blue-400 font-bold text-sm">A</div>
+                <div class="ml-3 text-left"><div class="font-medium text-gray-900 dark:text-white" id="read-author">Admin</div><div class="text-xs text-gray-500 dark:text-gray-400">Author • Plot Weaver</div></div>
+            </div>
+            <div class="border-t border-gray-100 dark:border-gray-700 mt-12 pt-8 text-center">
+                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Share this story</h4>
+                <div class="flex justify-center gap-4 flex-wrap">
+                    <button onclick="shareStory('whatsapp')" class="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 transition"><i data-lucide="message-circle" class="h-4 w-4"></i> WhatsApp</button>
+                    <button onclick="shareStory('facebook')" class="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 transition"><i data-lucide="facebook" class="h-4 w-4"></i> Facebook</button>
+                    <button onclick="shareStory('twitter')" class="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full hover:bg-gray-100 transition"><i data-lucide="twitter" class="h-4 w-4"></i> Twitter</button>
+                    <button onclick="shareStory('copy')" class="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-gray-700 text-slate-600 dark:text-gray-300 rounded-full hover:bg-slate-100 transition"><i data-lucide="link" class="h-4 w-4"></i> Copy Link</button>
+                </div>
+            </div>
+            <hr class="my-10 border-gray-100 dark:border-gray-700">
+            <div id="related-stories-container" class="mt-12"><h3 class="text-xl font-bold text-[#1e3a8a] dark:text-blue-400 mb-6 font-serif">You Might Also Like</h3><div id="related-stories-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div></div>
+        </div>
+
+        <!-- POLICY & INFO SECTION (UPDATED) -->
+        <div id="policy-section" class="hidden-section max-w-4xl mx-auto px-6 py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm mt-8 border border-gray-100 dark:border-gray-700">
+            <button onclick="navigateTo('home')" class="mb-8 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-2"><i data-lucide="arrow-left" class="h-4 w-4"></i> Back to Home</button>
+            <div class="flex justify-center flex-wrap gap-4 mb-10 border-b border-gray-200 dark:border-gray-700">
+                <button onclick="showPolicyTab('privacy')" id="tab-privacy" class="px-4 py-3 font-medium text-[#1e3a8a] border-b-2 border-[#1e3a8a] transition-all">Privacy Policy</button>
+                <button onclick="showPolicyTab('terms')" id="tab-terms" class="px-4 py-3 font-medium text-gray-500 hover:text-[#1e3a8a] transition-all">Terms</button>
+                <button onclick="showPolicyTab('about')" id="tab-about" class="px-4 py-3 font-medium text-gray-500 hover:text-[#1e3a8a] transition-all">About Us</button>
+                <button onclick="showPolicyTab('contact')" id="tab-contact" class="px-4 py-3 font-medium text-gray-500 hover:text-[#1e3a8a] transition-all">Contact</button>
+            </div>
+
+            <!-- Privacy Policy Content -->
+            <div id="content-privacy" class="prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Privacy Policy</h2>
+                <p class="mb-4">Last updated: November 2025</p>
+                <p class="mb-6">At Plot Weaver, accessible from our website, one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by Plot Weaver and how we use it.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">1. Information Collection</h3>
+                <p class="mb-4">We collect information to provide better services to all our users. This may include personal information such as name, email address, and phone number when voluntarily provided via contact forms or newsletters.</p>
+
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">2. Log Files</h3>
+                <p class="mb-4">Plot Weaver follows a standard procedure of using log files. These files log visitors when they visit websites. All hosting companies do this as a part of hosting services' analytics. The information collected by log files includes internet protocol (IP) addresses, browser type, Internet Service Provider (ISP), date and time stamp, referring/exit pages, and possibly the number of clicks. These are not linked to any information that is personally identifiable.</p>
+
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">3. Cookies and Web Beacons</h3>
+                <p class="mb-4">Like any other website, Plot Weaver uses 'cookies'. These cookies are used to store information including visitors' preferences, and the pages on the website that the visitor accessed or visited. The information is used to optimize the users' experience by customizing our web page content based on visitors' browser type and/or other information.</p>
+
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">4. Google DoubleClick DART Cookie</h3>
+                <p class="mb-4">Google is one of a third-party vendor on our site. It also uses cookies, known as DART cookies, to serve ads to our site visitors based upon their visit to our site and other sites on the internet. However, visitors may choose to decline the use of DART cookies by visiting the Google ad and content network Privacy Policy.</p>
+
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">5. GDPR Data Protection Rights</h3>
+                <p class="mb-4">We would like to make sure you are fully aware of all of your data protection rights. Every user is entitled to the following: The right to access, the right to rectification, the right to erasure, the right to restrict processing, the right to object to processing, and the right to data portability.</p>
+
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">6. CCPA Privacy Rights</h3>
+                <p class="mb-4">Under the CCPA, among other rights, California consumers have the right to request that a business that collects a consumer's personal data disclose the categories and specific pieces of personal data that a business has collected about consumers.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">7. Consent</h3>
+                <p class="mb-4">By using our website, you hereby consent to our Privacy Policy and agree to its terms.</p>
+            </div>
+
+            <!-- Terms of Service Content -->
+            <div id="content-terms" class="hidden prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Terms of Service</h2>
+                <p class="mb-6">Welcome to Plot Weaver! These terms and conditions outline the rules and regulations for the use of Plot Weaver's Website.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">1. License</h3>
+                <p class="mb-4">Unless otherwise stated, Plot Weaver and/or its licensors own the intellectual property rights for all material on Plot Weaver. All intellectual property rights are reserved. You may access this from Plot Weaver for your own personal use subjected to restrictions set in these terms and conditions.</p>
+
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">2. Restrictions</h3>
+                <p class="mb-2">You are specifically restricted from all of the following:</p>
+                <ul class="list-disc pl-5 mb-4">
+                    <li>Republishing material from Plot Weaver</li>
+                    <li>Selling, renting or sub-licensing material from Plot Weaver</li>
+                    <li>Reproducing, duplicating or copying material from Plot Weaver</li>
+                    <li>Redistributing content from Plot Weaver</li>
+                </ul>
+
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">3. User Content</h3>
+                <p class="mb-4">In these Website Standard Terms and Conditions, "Your Content" shall mean any audio, video text, images or other material you choose to display on this Website. By displaying Your Content, you grant Plot Weaver a non-exclusive, worldwide irrevocable, sub licensable license to use, reproduce, adapt, publish, translate and distribute it in any and all media.</p>
+
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">4. Content Liability</h3>
+                <p class="mb-4">We shall not be hold responsible for any content that appears on your Website. You agree to protect and defend us against all claims that is rising on your Website. No link(s) should appear on any Website that may be interpreted as libelous, obscene or criminal, or which infringes, otherwise violates, or advocates the infringement or other violation of, any third party rights.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">5. Reservation of Rights</h3>
+                <p class="mb-4">We reserve the right to request that you remove all links or any particular link to our Website. You approve to immediately remove all links to our Website upon request.</p>
+            </div>
+
+            <!-- About Us Content -->
+            <div id="content-about" class="hidden prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">About Plot Weaver</h2>
+                <p class="mb-6">Welcome to <strong>Plot Weaver</strong>, a digital sanctuary where imagination knows no bounds and threads of thought are meticulously woven into compelling narratives.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">Our Mission</h3>
+                <p class="mb-4">Our mission is simple yet profound: to empower voices and stories that might otherwise go unheard. We believe that every individual holds a universe of stories within them, waiting for the right moment and medium to be shared with the world.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">What We Do</h3>
+                <p class="mb-4">Plot Weaver serves as a canvas for writers, thinkers, and dreamers. Whether it is fiction that transports you to another world, insightful articles that challenge your perspective, or personal essays that touch the soul, we curate content that resonates.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">Join Our Journey</h3>
+                <p class="mb-4">We are more than just a website; we are a community of storytellers. We invite you to read, reflect, and perhaps even weave a plot of your own. Together, let's explore the unbound possibilities of the written word.</p>
+            </div>
+
+            <!-- Contact Us Content -->
+            <div id="content-contact" class="hidden prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Contact Us</h2>
+                <p class="mb-6">We would love to hear from you! Whether you have a question about our stories, feedback on the website, or just want to say hello, feel free to reach out to us.</p>
+                
+                <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-xl border border-gray-100 dark:border-gray-600 mb-8">
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full text-[#1e3a8a] dark:text-blue-400">
+                            <i data-lucide="mail" class="h-6 w-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 dark:text-white">Email Us</h4>
+                            <p class="text-gray-600 dark:text-gray-400 mb-1">For general inquiries and support:</p>
+                            <a href="mailto:plotweaver815@gmail.com" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">plotweaver815@gmail.com</a>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full text-[#1e3a8a] dark:text-blue-400">
+                            <i data-lucide="phone" class="h-6 w-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 dark:text-white">Call Us</h4>
+                            <p class="text-gray-600 dark:text-gray-400 mb-1">Mon-Fri from 9am to 5pm:</p>
+                            <a href="tel:+923021743204" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">+92 (302) 174-3204</a>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4">
+                        <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full text-[#1e3a8a] dark:text-blue-400">
+                            <i data-lucide="map-pin" class="h-6 w-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900 dark:text-white">Visit Us</h4>
+                            <p class="text-gray-600 dark:text-gray-400 font-medium">
+                                Plot Weaver HQ<br>
+                                CC-Block Sector D,<br>
+                                Bahria Town, Lahore
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-100 dark:bg-gray-800 border-t border-slate-200 dark:border-gray-700 py-8 mt-12 transition-colors duration-300">
+        <div class="max-w-6xl mx-auto px-4 text-center text-gray-500 dark:text-gray-400 text-sm flex flex-col items-center">
+             <img src="logo1.png" alt="Plot Weaver" class="h-10 w-auto object-contain mb-4 opacity-70">
+             <div class="flex justify-center gap-6 mb-4">
+                <a href="https://www.facebook.com/share/1Bj9ZHiMZ4/" class="hover:text-blue-600"><i data-lucide="facebook"></i></a>
+                <a href="https://www.instagram.com/plotweaver815?igsh=eG15amt2cXRkZTNz" class="hover:text-pink-600"><i data-lucide="instagram"></i></a>
+                <a href="https://x.com/PlotWeaver815?t=uO0aZICPWYJgjJ3fBOB8dg&s=09" class="hover:text-blue-400"><i data-lucide="twitter"></i></a>
+             </div>
+             <div class="flex justify-center gap-4 mb-4"><a href="#" onclick="showPolicy('privacy')">Privacy</a><a href="#" onclick="showPolicy('terms')">Terms</a><a href="#" onclick="showPolicy('about')">About</a><a href="#" onclick="showPolicy('contact')">Contact</a></div>
+            <p>&copy; 2025 Plot Weaver.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDBuXrLKL-P3KEiMOgrGIlFGxe3gtPJ7Ck",
+            authDomain: "plot-weaver-e2800.firebaseapp.com",
+            projectId: "plot-weaver-e2800",
+            storageBucket: "plot-weaver-e2800.firebasestorage.app",
+            messagingSenderId: "66808792190",
+            appId: "1:66808792190:web:4ebfaceac187e5cdafc42f",
+            measurementId: "G-0MVYL81KDE"
+        };
+
+        // Initialize Firebase
+        let db;
+        let isFirebaseReady = false;
+        let articles = [];
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            isFirebaseReady = true;
+            console.log("Firebase Connected Successfully");
+        } catch(e) { console.error("Firebase Init Error:", e); }
+
+        // --- VARIABLES & AUTH ---
+        let currentStatus = 'draft', tempImages = [], isAdmin = sessionStorage.getItem('pw_admin') === 'true', logoClickCount = 0, logoClickTimer, searchQuery = "", selectedCategory = "All";
+        
+        if (!localStorage.getItem('pw_admin_password')) localStorage.setItem('pw_admin_password', 'admin123');
+        if (localStorage.getItem('pw_theme') === 'dark' || (!('pw_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
+        
+        // --- DATABASE FUNCTIONS ---
+        async function fetchArticles() {
+            if (!isFirebaseReady) return; // Just wait if not ready
+            try {
+                // Fetch collection
+                const snapshot = await db.collection("articles").get();
+                articles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Sort by Date (simple string sort or ID sort if needed, Firebase does better with timestamps)
+                articles.sort((a, b) => new Date(b.date) - new Date(a.date)); 
+                renderHome();
+            } catch (e) { console.error("Fetch Error:", e); }
+        }
+
+        async function saveArticle() {
+            const title = document.getElementById('edit-title').value;
+            if(!title) return alert("Title required");
+            
+            // Process images in content
+            let content = document.getElementById('edit-content').value.replace(/\[IMAGE-(\d+)\]/g, (m,p1) => {
+                const idx = parseInt(p1)-1; return tempImages[idx] ? `[IMG: ${tempImages[idx]}]` : '';
+            });
+
+            const data = {
+                title,
+                subtitle: document.getElementById('edit-subtitle').value,
+                category: document.getElementById('edit-category').value || 'General',
+                content,
+                author: "Admin",
+                date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+                status: currentStatus,
+                isFeatured: document.getElementById('edit-featured').checked,
+                readTime: Math.ceil(content.split(' ').length/200) + " min read"
+            };
+
+            const editId = document.getElementById('edit-id').value;
+
+            if (isFirebaseReady) {
+                try {
+                    if (editId) {
+                        await db.collection("articles").doc(editId).update(data);
+                    } else {
+                        await db.collection("articles").add(data);
+                    }
+                    await fetchArticles();
+                    navigateTo('dashboard');
+                } catch (e) { alert("Error saving to cloud: " + e.message); }
+            }
+        }
+
+        async function deleteArticle(id) {
+            if(!confirm("Delete this story?")) return;
+            if (isFirebaseReady) {
+                try {
+                    await db.collection("articles").doc(id).delete();
+                    await fetchArticles();
+                    renderDashboard();
+                } catch(e) { alert("Error deleting: " + e.message); }
+            }
+        }
+        
+        async function toggleStatus(id) {
+            const a = articles.find(x => x.id == id);
+            if(a && isFirebaseReady) {
+                const newStatus = a.status === 'draft' ? 'published' : 'draft';
+                await db.collection("articles").doc(id).update({ status: newStatus });
+                await fetchArticles();
+                renderDashboard();
+            }
+        }
+
+        // --- UI FUNCTIONS ---
+        function getThumbnail(c) { const m = c.match(/\[IMG: (.*?)\]/); return m ? m[1] : null; }
+        
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('pw_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            updateThemeIcons();
+        }
+        function updateThemeIcons() {
+            const n = document.documentElement.classList.contains('dark') ? 'sun' : 'moon';
+            document.getElementById('theme-icon').setAttribute('data-lucide', n);
+            document.getElementById('mobile-theme-icon').setAttribute('data-lucide', n);
+            lucide.createIcons();
+        }
+        
+        function acceptCookies() {
+            localStorage.setItem('pw_cookie_consent', 'true');
+            document.getElementById('cookie-banner').style.display = 'none';
+        }
+
+        function toggleMobileMenu() {
+            const m = document.getElementById('mobile-menu'), i = document.getElementById('mobile-menu-icon');
+            m.classList.toggle('hidden');
+            i.setAttribute('data-lucide', m.classList.contains('hidden') ? 'menu' : 'x');
+            lucide.createIcons();
+        }
+
+        function navigateTo(s) {
+            if(s === 'home') { logoClickCount=0; searchQuery=""; selectedCategory="All"; document.getElementById('search-input').value=""; }
+            document.querySelectorAll('.hidden-section, #home-section, #dashboard-section, #editor-section, #article-section, #settings-section, #policy-section').forEach(el => el.classList.add('hidden-section'));
+            const t = document.getElementById(s + '-section');
+            if(t) { t.classList.remove('hidden-section'); t.classList.add('fade-in'); }
+            
+            if (s === 'home') renderHome();
+            if (s === 'dashboard') { 
+                if(!isAdmin){ alert("Access Denied"); navigateTo('home'); return; } 
+                renderDashboard(); 
+            }
+            window.scrollTo(0,0); lucide.createIcons();
+        }
+
+        // Auth
+        function handleLogoClick() {
+            logoClickCount++; clearTimeout(logoClickTimer);
+            logoClickTimer = setTimeout(() => { if(logoClickCount<5) navigateTo('home'); logoClickCount=0; }, 1000);
+            if(logoClickCount>=5) { clearTimeout(logoClickTimer); logoClickCount=0; promptLogin(); }
+        }
+        function promptLogin() {
+            if(isAdmin) { alert("Already Logged In"); navigateTo('dashboard'); return; }
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-modal').classList.add('flex');
+            document.getElementById('modal-password-input').value='';
+            document.getElementById('modal-password-input').focus();
+        }
+        function closeLoginModal() { document.getElementById('login-modal').classList.add('hidden'); document.getElementById('login-modal').classList.remove('flex'); }
+        function submitLogin() {
+            if(document.getElementById('modal-password-input').value === localStorage.getItem('pw_admin_password')) {
+                isAdmin=true; sessionStorage.setItem('pw_admin','true'); closeLoginModal(); updateAuthUI(); navigateTo('dashboard');
+            } else { alert("Incorrect Password"); }
+        }
+        function toggleAuth() { if(isAdmin) { document.getElementById('logout-modal').classList.remove('hidden'); document.getElementById('logout-modal').classList.add('flex'); } else promptLogin(); }
+        function closeLogoutModal() { document.getElementById('logout-modal').classList.add('hidden'); document.getElementById('logout-modal').classList.remove('flex'); }
+        function confirmLogout() { isAdmin=false; sessionStorage.setItem('pw_admin','false'); closeLogoutModal(); updateAuthUI(); navigateTo('home'); }
+        
+        function updateAuthUI() {
+            const a = isAdmin;
+            const ids = ['nav-write-btn', 'auth-btn', 'mobile-nav-write-btn', 'mobile-auth-btn'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                     if (a) {
+                         el.classList.remove('hidden');
+                         if(id.includes('auth')) el.style.display = 'flex';
+                     } else {
+                         el.classList.add('hidden');
+                         el.style.display = '';
+                     }
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function changePassword() {
+            const cur = document.getElementById('settings-current-pass').value, neu = document.getElementById('settings-new-pass').value;
+            if(cur !== localStorage.getItem('pw_admin_password')) return alert("Wrong current password");
+            if(neu.length < 4) return alert("New password too short");
+            localStorage.setItem('pw_admin_password', neu); alert("Password Updated"); navigateTo('dashboard');
+        }
+
+        // Editor & Render
+        function openEditor(a=null) {
+            tempImages=[]; 
+            const cats = new Set(['All']); articles.forEach(x=>cats.add(x.category||'General'));
+            document.getElementById('category-options').innerHTML = Array.from(cats).filter(c=>c!=='All').map(c=>`<option value="${c}">`).join('');
+            
+            if(a) {
+                document.getElementById('edit-id').value = a.id;
+                document.getElementById('edit-title').value = a.title;
+                document.getElementById('edit-subtitle').value = a.subtitle;
+                document.getElementById('edit-category').value = a.category;
+                document.getElementById('edit-featured').checked = a.isFeatured;
+                document.getElementById('edit-content').value = a.content.replace(/\[IMG: (.*?)\]/g, (m,p1) => { tempImages.push(p1); return `[IMAGE-${tempImages.length}]`; });
+                currentStatus = a.status;
+            } else {
+                document.getElementById('edit-id').value = '';
+                document.getElementById('edit-title').value = '';
+                document.getElementById('edit-subtitle').value = '';
+                document.getElementById('edit-category').value = '';
+                document.getElementById('edit-featured').checked = false;
+                document.getElementById('edit-content').value = '';
+                currentStatus = 'draft';
+            }
+            document.getElementById('editor-status-badge').innerText = currentStatus === 'published' ? 'Published' : 'Draft';
+            navigateTo('editor');
+        }
+
+        function editArticle(id) { const a = articles.find(x=>x.id==id); if(a) openEditor(a); }
+        
+        function triggerImageUpload() { document.getElementById('image-upload-input').click(); }
+        function handleImageUpload(input) {
+            const f = input.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = function(e) { tempImages.push(e.target.result); document.getElementById('edit-content').value += `\n[IMAGE-${tempImages.length}]\n`; };
+            r.readAsDataURL(f);
+        }
+
+        function handleSearch() { searchQuery = document.getElementById('search-input').value.toLowerCase(); renderHome(); }
+        function selectCategory(c) { selectedCategory = c; renderHome(); }
+
+        function renderHome() {
+             const m=document.getElementById('articles-list'), t=document.getElementById('top-stories-list'), n=document.getElementById('new-stories-list');
+             m.innerHTML = `<div class="skeleton w-full h-64 rounded-lg mb-4"></div>`;
+             
+             setTimeout(() => {
+                 m.innerHTML=''; t.innerHTML=''; n.innerHTML='';
+                 const cats = new Set(['All']); articles.forEach(a=>cats.add(a.category||'General'));
+                 document.getElementById('category-list').innerHTML = Array.from(cats).map(c => `<button onclick="selectCategory('${c}')" class="px-4 py-1.5 rounded-full text-sm font-medium mr-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-white">${c}</button>`).join('');
+                 
+                 const pub = articles.filter(a => a.status==='published' && (selectedCategory==='All' || a.category===selectedCategory) && (a.title.toLowerCase().includes(searchQuery) || (a.content && a.content.toLowerCase().includes(searchQuery))));
+                 
+                 if(pub.length===0) m.innerHTML = '<div class="text-center py-10 text-gray-400">No stories found.</div>';
+                 
+                 pub.forEach(a => {
+                     const th = getThumbnail(a.content), img = th ? `<div class="w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4 bg-cover bg-center shadow-sm" style="background-image: url('${th}')"></div>` : '';
+                     m.innerHTML += `<article class="cursor-pointer border-b border-gray-200 dark:border-gray-700 pb-12 mb-12 last:border-0" onclick="readArticle('${a.id}')"><div class="text-center text-sm text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-widest"><span class="text-[#1e3a8a] dark:text-blue-400 font-bold mr-2">${a.category || 'General'}</span> • ${a.date}</div><h2 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white serif group-hover:text-[#1e3a8a] dark:group-hover:text-blue-400 transition text-center">${a.title}</h2>${img}<h3 class="text-xl text-gray-500 dark:text-gray-400 font-light text-center mt-4">${a.subtitle||''}</h3></article>`;
+                 });
+                 
+                 const featured = articles.filter(a=>a.status==='published' && a.isFeatured);
+                 featured.forEach(a => {
+                     const th = getThumbnail(a.content), img = th ? `<div class="h-16 w-16 flex-shrink-0 bg-gray-200 dark:bg-gray-700 rounded bg-cover bg-center shadow-sm" style="background-image: url('${th}')"></div>` : '';
+                     t.innerHTML += `<div class="cursor-pointer group flex gap-3 items-start border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0" onclick="readArticle('${a.id}')">${img}<div class="flex-grow"><h4 class="font-bold text-gray-800 dark:text-gray-200 text-sm leading-tight group-hover:text-[#1e3a8a] dark:group-hover:text-blue-400 transition mb-1 line-clamp-2">${a.title}</h4><span class="text-[10px] text-gray-400 uppercase tracking-wide">${a.date}</span></div></div>`;
+                 });
+
+                 const recent = articles.filter(a=>a.status==='published').slice(0,5);
+                 recent.forEach(a => {
+                     const th = getThumbnail(a.content), img = th ? `<div class="h-16 w-16 flex-shrink-0 bg-gray-200 dark:bg-gray-700 rounded bg-cover bg-center shadow-sm" style="background-image: url('${th}')"></div>` : '';
+                     n.innerHTML += `<div class="cursor-pointer group flex gap-3 items-start border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0" onclick="readArticle('${a.id}')">${img}<div class="flex-grow"><h4 class="font-bold text-gray-800 dark:text-gray-200 text-sm leading-tight group-hover:text-[#1e3a8a] dark:group-hover:text-blue-400 transition mb-1 line-clamp-2">${a.title}</h4><span class="text-[10px] text-gray-400 uppercase tracking-wide">${a.date}</span></div></div>`;
+                 });
+                 
+                 lucide.createIcons();
+             }, 300);
+        }
+
+        function renderDashboard() {
+             const l = document.getElementById('dashboard-list'); l.innerHTML = '';
+             articles.forEach(a => {
+                 const st = a.status==='published'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700';
+                 const ft = a.isFeatured ? '<i data-lucide="star" class="h-4 w-4 text-yellow-500 fill-yellow-500"></i>' : '';
+                 const btnTxt = a.status==='draft'?'PUBLISH':'UNPUBLISH';
+                 l.innerHTML += `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"><td class="p-4 font-bold dark:text-white">${a.title}</td><td class="p-4 text-sm text-gray-500">${a.category||'General'}</td><td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${st}">${a.status}</span></td><td class="p-4">${ft}</td><td class="p-4 text-right"><button onclick="toggleStatus('${a.id}')" class="text-xs font-bold text-blue-600 border border-blue-600 px-2 py-1 rounded mr-2">${btnTxt}</button><button onclick="editArticle('${a.id}')" class="text-blue-600 text-sm mr-2">Edit</button><button onclick="deleteArticle('${a.id}')" class="text-red-500 text-sm">Delete</button></td></tr>`;
+             });
+             lucide.createIcons();
+        }
+
+        function readArticle(id) {
+             const a = articles.find(x=>x.id==id); if(!a) return;
+             document.getElementById('read-title').innerText = a.title;
+             document.getElementById('read-subtitle').innerText = a.subtitle;
+             document.getElementById('read-date').innerText = a.date;
+             document.getElementById('read-category').innerText = a.category;
+             document.getElementById('read-author').innerText = a.author;
+             
+             document.getElementById('read-content').innerHTML = a.content.split('\n').map(p => {
+                 const t = p.trim(); if(!t) return '';
+                 if(t.startsWith('[IMG:')) { const u = t.slice(5,-1).trim(); return `<img src="${u}" class="w-full rounded-lg my-8 shadow-md">`; }
+                 return `<p class="mb-4">${t}</p>`;
+             }).join('');
+
+             const c = document.getElementById('related-stories-list'); c.innerHTML='';
+             const rel = articles.filter(x => x.status==='published' && x.id!=id && x.category===a.category).slice(0,2);
+             if(rel.length>0) {
+                 document.getElementById('related-stories-container').classList.remove('hidden');
+                 rel.forEach(r => {
+                     const th = getThumbnail(r.content), img = th ? `<div class="h-40 w-full bg-gray-200 dark:bg-gray-700 rounded-lg mb-3 bg-cover bg-center" style="background-image: url('${th}')"></div>` : '';
+                     c.innerHTML += `<div class="cursor-pointer group p-4 border border-gray-100 dark:border-gray-700 rounded-lg hover:shadow-md transition" onclick="readArticle('${r.id}')">${img}<h4 class="font-bold text-gray-800 dark:text-gray-200 text-lg mb-1 group-hover:text-blue-600 transition line-clamp-2">${r.title}</h4></div>`;
+                 });
+             } else document.getElementById('related-stories-container').classList.add('hidden');
+
+             navigateTo('article');
+        }
+
+        function shareStory(p) {
+            const t = document.getElementById('read-title').innerText, u = window.location.href;
+            if(p==='copy') { navigator.clipboard.writeText(u); alert("Link Copied"); return; }
+            const map = { whatsapp: `https://wa.me/?text=${encodeURIComponent(t+' '+u)}`, facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(u)}`, twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' '+u)}` };
+            window.open(map[p], '_blank');
+        }
+
+        function showPolicy(t) { navigateTo('policy'); showPolicyTab(t); }
+        function showPolicyTab(t) {
+             ['privacy','terms','about','contact'].forEach(x => {
+                 document.getElementById('content-'+x).classList.add('hidden');
+                 document.getElementById('tab-'+x).className = "px-4 py-3 font-medium text-gray-500 hover:text-[#1e3a8a] transition-all";
+             });
+             document.getElementById('content-'+t).classList.remove('hidden');
+             document.getElementById('tab-'+t).className = "px-4 py-3 font-medium text-[#1e3a8a] border-b-2 border-[#1e3a8a] transition-all";
+        }
+
+        // SCROLL PROGRESS
+        window.onscroll = function() {
+            const btn = document.getElementById("back-to-top");
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) btn.classList.remove("translate-y-20", "opacity-0");
+            else btn.classList.add("translate-y-20", "opacity-0");
+            
+            const artSec = document.getElementById("article-section");
+            const ind = document.getElementById("article-scroll-indicator");
+            if (!artSec.classList.contains("hidden-section")) {
+                ind.classList.remove("hidden");
+                let h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                document.getElementById("vertical-progress-bar").style.height = ((document.documentElement.scrollTop / h) * 100) + "%";
+            } else ind.classList.add("hidden");
+        };
+        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+        // INIT
+        updateThemeIcons(); 
+        updateAuthUI(); 
+        fetchArticles();
+        if(!localStorage.getItem('pw_cookie_consent')) document.getElementById('cookie-banner').style.display = 'flex';
+        navigateTo('home');
+
+    </script>
+</body>
+</html>
